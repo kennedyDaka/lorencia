@@ -1,13 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useAuthStore } from "@/store/auth";
 import { supabase } from "@/lib/supabase";
+import { LogOut } from "lucide-react";
 
-export const Route = createFileRoute("/")({
-  component: HomePage,
-});
-
-function HomePage() {
-  const { userId, isLoading } = useAuthStore();
+export function HomePage() {
+  const { userId, email, isLoading } = useAuthStore();
 
   if (isLoading) {
     return (
@@ -25,6 +22,9 @@ function HomePage() {
 
         {userId ? (
           <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Signed in as <span className="font-medium text-foreground">{email}</span>
+            </div>
             <Link
               to="/pos/cafe"
               className="block w-full rounded-lg bg-primary px-6 py-3 text-primary-foreground font-medium hover:opacity-90 transition-opacity"
@@ -39,8 +39,9 @@ function HomePage() {
             </Link>
             <button
               onClick={() => supabase.auth.signOut()}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
+              <LogOut className="h-4 w-4" />
               Sign out
             </button>
           </div>
