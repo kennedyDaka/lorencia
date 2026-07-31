@@ -8,6 +8,9 @@ import { AuthPage } from "./pages/auth";
 import { DashboardPage } from "./pages/dashboard";
 import { AuthenticatedLayout } from "./pages/authenticated-layout";
 import { PosPage } from "./pages/pos";
+import { InventoryPage } from "./pages/inventory";
+import { ExpensesPage } from "./pages/expenses";
+import { CustomersPage } from "./pages/customers";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -57,31 +60,19 @@ const posRoute = createRoute({
 const posInventoryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/pos/$business/inventory",
-  component: () => (
-    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-      Inventory — Coming soon
-    </div>
-  ),
+  component: InventoryPage,
 });
 
 const posExpensesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/pos/$business/expenses",
-  component: () => (
-    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-      Expenses — Coming soon
-    </div>
-  ),
+  component: ExpensesPage,
 });
 
 const posCustomersRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/pos/$business/customers",
-  component: () => (
-    <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-      Customers — Coming soon
-    </div>
-  ),
+  component: CustomersPage,
 });
 
 export const routeTree = rootRoute.addChildren([
