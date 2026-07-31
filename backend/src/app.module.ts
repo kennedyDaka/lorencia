@@ -12,6 +12,8 @@ import { CateringModule } from "./catering/catering.module";
 import { RawMaterialsModule } from "./raw-materials/raw-materials.module";
 import { AccountingModule } from "./accounting/accounting.module";
 import { ReportsModule } from "./reports/reports.module";
+import { PayrollModule } from "./payroll/payroll.module";
+import { UsersModule } from "./users/users.module";
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { ReportsModule } from "./reports/reports.module";
     RawMaterialsModule,
     AccountingModule,
     ReportsModule,
+    PayrollModule,
+    UsersModule,
   ],
 })
 export class AppModule {}

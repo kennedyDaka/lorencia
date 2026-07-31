@@ -11,6 +11,11 @@ import { PosPage } from "./pages/pos";
 import { InventoryPage } from "./pages/inventory";
 import { ExpensesPage } from "./pages/expenses";
 import { CustomersPage } from "./pages/customers";
+import { CateringPage } from "./pages/catering";
+import { RawMaterialsPage } from "./pages/raw-materials";
+import { AccountingPage } from "./pages/accounting";
+import { PayrollPage } from "./pages/payroll";
+import { ReportsPage } from "./pages/reports";
 
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
@@ -75,6 +80,36 @@ const posCustomersRoute = createRoute({
   component: CustomersPage,
 });
 
+const posCateringRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pos/$business/catering",
+  component: CateringPage,
+});
+
+const posRawMaterialsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pos/$business/raw-materials",
+  component: RawMaterialsPage,
+});
+
+const posAccountingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pos/$business/accounting",
+  component: AccountingPage,
+});
+
+const posPayrollRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pos/$business/payroll",
+  component: PayrollPage,
+});
+
+const posReportsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/pos/$business/reports",
+  component: ReportsPage,
+});
+
 export const routeTree = rootRoute.addChildren([
   indexRoute,
   authRoute,
@@ -85,4 +120,9 @@ export const routeTree = rootRoute.addChildren([
   posInventoryRoute,
   posExpensesRoute,
   posCustomersRoute,
+  posCateringRoute,
+  posRawMaterialsRoute,
+  posAccountingRoute,
+  posPayrollRoute,
+  posReportsRoute,
 ]);

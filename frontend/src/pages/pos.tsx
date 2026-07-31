@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost } from "@/services/api";
 import { BUSINESSES } from "@/lib/businesses";
 import { formatMK } from "@/lib/utils";
-import { ShoppingCart, ArrowLeft, Package, Receipt, Users, Loader2, Check } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Package, Receipt, Users, ChefHat, Boxes, BookOpen, Wallet, BarChart3, Loader2, Check } from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/store/auth";
 import { supabase } from "@/lib/supabase";
@@ -164,6 +164,21 @@ export function PosPage() {
                 </Link>
                 <Link to={`/pos/${business}/customers`} className="text-sm text-muted-foreground hover:text-foreground">
                   <Users className="h-4 w-4 inline mr-1" />Customers
+                </Link>
+                <Link to={`/pos/${business}/catering`} className="text-sm text-muted-foreground hover:text-foreground">
+                  <ChefHat className="h-4 w-4 inline mr-1" />Catering
+                </Link>
+                <Link to={`/pos/${business}/raw-materials`} className="text-sm text-muted-foreground hover:text-foreground">
+                  <Boxes className="h-4 w-4 inline mr-1" />Materials
+                </Link>
+                <Link to={`/pos/${business}/accounting`} className="text-sm text-muted-foreground hover:text-foreground">
+                  <BookOpen className="h-4 w-4 inline mr-1" />Accounting
+                </Link>
+                <Link to={`/pos/${business}/payroll`} className="text-sm text-muted-foreground hover:text-foreground">
+                  <Wallet className="h-4 w-4 inline mr-1" />Payroll
+                </Link>
+                <Link to={`/pos/${business}/reports`} className="text-sm text-muted-foreground hover:text-foreground">
+                  <BarChart3 className="h-4 w-4 inline mr-1" />Reports
                 </Link>
                 <button onClick={() => supabase.auth.signOut()} className="text-sm text-muted-foreground hover:text-foreground">
                   Sign out
