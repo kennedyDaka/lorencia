@@ -1,4 +1,4 @@
-export const BUSINESSES = {
+export const BUSINESSES: Record<string, { id: string; name: string; slug: string; hasCatering: boolean; hasRawMaterials: boolean }> = {
   cafe: {
     id: import.meta.env.VITE_CAFE_BUSINESS_ID ?? "02a8572f-9352-409e-b8b8-bed453205c69",
     name: "Lorencia Cafe",
@@ -13,6 +13,6 @@ export const BUSINESSES = {
     hasCatering: false,
     hasRawMaterials: false,
   },
-} as const;
+};
 
 export type BusinessSlug = keyof typeof BUSINESSES;
