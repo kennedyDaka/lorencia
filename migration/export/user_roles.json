@@ -1,0 +1,23 @@
+[
+  {
+    "id": "07748dac-75d5-45e1-9aa9-80ecd8debc2a",
+    "user_id": "469efe9c-188a-4243-a008-bb2ae9d6bd8f",
+    "role": "owner",
+    "created_at": "2026-07-05T06:14:01.695396+00:00",
+    "business_id": null
+  },
+  {
+    "id": "e8d03e48-d2de-4536-8c1f-6c9601afa825",
+    "user_id": "aca74c03-dd50-491e-ab57-bf9273a633e2",
+    "role": "cashier",
+    "created_at": "2026-07-16T06:16:28.584429+00:00",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69"
+  },
+  {
+    "id": "f60bd0b3-1456-4347-868b-f0f94de0d925",
+    "user_id": "53b30441-a209-42e6-b3f9-1c011846dc07",
+    "role": "cashier",
+    "created_at": "2026-07-16T07:56:42.548947+00:00",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4"
+  }
+]

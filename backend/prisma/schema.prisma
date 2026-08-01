@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["public"]
 }
 
 enum AppRole {
@@ -13,6 +14,8 @@ enum AppRole {
   cashier
   storekeeper
   accountant
+
+  @@schema("public")
 }
 
 model Profile {
@@ -22,30 +25,21 @@ model Profile {
   updatedAt DateTime @default(now()) @map("updated_at")
 
   @@map("profiles")
+  @@schema("public")
 }
 
 model UserRole {
   id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @map("user_id")
+  userId     String   @db.Uuid @map("user_id")
   role       AppRole
-  businessId String?  @map("business_id")
+  businessId String?  @db.Uuid @map("business_id")
   createdAt  DateTime @default(now()) @map("created_at")
 
-  user     User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   business Business?  @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@unique([userId, businessId, role])
   @@map("user_roles")
-}
-
-model User {
-  id            String      @id @db.Uuid
-  userRoles     UserRole[]
-  sales         Sale[]      @relation("CashierSales")
-  expenses      Expense[]   @relation("ExpenseCreator")
-  journalEntries JournalEntry[] @relation("JournalCreator")
-
-  @@map("auth.users")
+  @@schema("public")
 }
 
 model Business {
@@ -74,11 +68,12 @@ model Business {
   userRoles             UserRole[]
 
   @@map("businesses")
+  @@schema("public")
 }
 
 model Product {
   id                 String   @id @default(uuid()) @db.Uuid
-  businessId         String   @map("business_id")
+  businessId         String   @db.Uuid @map("business_id")
   name               String
   category           String?
   price              Decimal  @default(0) @db.Decimal(12, 2)
@@ -94,11 +89,12 @@ model Product {
 
   @@index([businessId, isActive])
   @@map("products")
+  @@schema("public")
 }
 
 model Customer {
   id         String   @id @default(uuid()) @db.Uuid
-  businessId String?  @map("business_id")
+  businessId String?  @db.Uuid @map("business_id")
   name       String
   phone      String?
   email      String?
@@ -111,32 +107,33 @@ model Customer {
 
   @@index([businessId])
   @@map("customers")
+  @@schema("public")
 }
 
 model Sale {
   id            String    @id @default(uuid()) @db.Uuid
-  businessId    String    @map("business_id")
-  cashierId     String?   @map("cashier_id")
-  customerId    String?   @map("customer_id")
+  businessId    String    @db.Uuid @map("business_id")
+  cashierId     String?   @db.Uuid @map("cashier_id")
+  customerId    String?   @db.Uuid @map("customer_id")
   total         Decimal   @default(0) @db.Decimal(14, 2)
   paymentMethod String    @default("cash") @map("payment_method")
   note          String?
   createdAt     DateTime  @default(now()) @map("created_at")
 
   business  Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  cashier   User?       @relation("CashierSales", fields: [cashierId], references: [id], onDelete: SetNull)
   customer  Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items     SaleItem[]
 
   @@index([businessId, createdAt(sort: Desc)])
   @@index([cashierId])
   @@map("sales")
+  @@schema("public")
 }
 
 model SaleItem {
   id          String  @id @default(uuid()) @db.Uuid
-  saleId      String  @map("sale_id")
-  productId   String? @map("product_id")
+  saleId      String  @db.Uuid @map("sale_id")
+  productId   String? @db.Uuid @map("product_id")
   productName String  @map("product_name")
   qty         Decimal @default(1) @db.Decimal(12, 2)
   unitPrice   Decimal @default(0) @map("unit_price") @db.Decimal(12, 2)
@@ -147,19 +144,19 @@ model SaleItem {
   @@index([saleId])
   @@index([productId])
   @@map("sale_items")
+  @@schema("public")
 }
 
 model Expense {
   id         String   @id @default(uuid()) @db.Uuid
-  businessId String   @map("business_id")
+  businessId String   @db.Uuid @map("business_id")
   category   String
   amount     Decimal  @db.Decimal(14, 2)
   note       String?
-  createdBy  String?  @map("created_by")
+  createdBy  String?  @db.Uuid @map("created_by")
   createdAt  DateTime @default(now()) @map("created_at")
 
   business       Business           @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  creator        User?              @relation("ExpenseCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   items          ExpenseItem[]
   rawMaterialPurchases RawMaterialPurchase[]
   cateringCosts  CateringCost[]
@@ -167,30 +164,32 @@ model Expense {
   @@index([businessId, createdAt(sort: Desc)])
   @@index([createdBy])
   @@map("expenses")
+  @@schema("public")
 }
 
 model ExpenseItem {
   id              String   @id @default(uuid()) @db.Uuid
-  expenseId       String   @map("expense_id")
+  expenseId       String   @db.Uuid @map("expense_id")
   description     String
   qty             Decimal  @default(1) @db.Decimal(12, 2)
   unit            String?
   unitPrice       Decimal  @default(0) @map("unit_price") @db.Decimal(14, 2)
   total           Decimal  @default(0) @db.Decimal(14, 2)
   inventoryType   String?  @map("inventory_type")
-  inventoryItemId String?  @map("inventory_item_id")
+  inventoryItemId String?  @db.Uuid @map("inventory_item_id")
   createdAt       DateTime @default(now()) @map("created_at")
 
   expense Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
 
   @@index([expenseId])
   @@map("expense_items")
+  @@schema("public")
 }
 
 model CateringEvent {
   id             String   @id @default(uuid()) @db.Uuid
-  businessId     String   @map("business_id")
-  customerId     String?  @map("customer_id")
+  businessId     String   @db.Uuid @map("business_id")
+  customerId     String?  @db.Uuid @map("customer_id")
   eventDate      DateTime @map("event_date") @db.Date
   venue          String?
   guests         Int      @default(0)
@@ -208,17 +207,18 @@ model CateringEvent {
 
   @@index([businessId, status, completedAt(sort: Desc)])
   @@map("catering_events")
+  @@schema("public")
 }
 
 model CateringCost {
   id                String   @id @default(uuid()) @db.Uuid
-  cateringEventId   String   @map("catering_event_id")
-  businessId        String   @map("business_id")
-  expenseId         String?  @map("expense_id")
+  cateringEventId   String   @db.Uuid @map("catering_event_id")
+  businessId        String   @db.Uuid @map("business_id")
+  expenseId         String?  @db.Uuid @map("expense_id")
   category          String   @default("Catering Cost")
   description       String
   amount            Decimal  @db.Decimal(14, 2)
-  createdBy         String?  @map("created_by")
+  createdBy         String?  @db.Uuid @map("created_by")
   createdAt         DateTime @default(now()) @map("created_at")
 
   cateringEvent CateringEvent @relation(fields: [cateringEventId], references: [id], onDelete: Cascade)
@@ -228,11 +228,12 @@ model CateringCost {
   @@index([cateringEventId])
   @@index([businessId, createdAt])
   @@map("catering_costs")
+  @@schema("public")
 }
 
 model RawMaterial {
   id                String   @id @default(uuid()) @db.Uuid
-  businessId        String   @map("business_id")
+  businessId        String   @db.Uuid @map("business_id")
   name              String
   category          String?
   unit              String   @default("kg")
@@ -249,18 +250,19 @@ model RawMaterial {
 
   @@index([businessId, isActive])
   @@map("raw_materials")
+  @@schema("public")
 }
 
 model RawMaterialPurchase {
   id             String   @id @default(uuid()) @db.Uuid
-  rawMaterialId  String   @map("raw_material_id")
-  businessId     String   @map("business_id")
+  rawMaterialId  String   @db.Uuid @map("raw_material_id")
+  businessId     String   @db.Uuid @map("business_id")
   qtyAdded       Decimal  @map("qty_added") @db.Decimal(12, 2)
   unitCost       Decimal  @map("unit_cost") @db.Decimal(12, 2)
   totalCost      Decimal  @map("total_cost") @db.Decimal(14, 2)
   note           String?
-  expenseId      String?  @map("expense_id")
-  createdBy      String?  @map("created_by")
+  expenseId      String?  @db.Uuid @map("expense_id")
+  createdBy      String?  @db.Uuid @map("created_by")
   createdAt      DateTime @default(now()) @map("created_at")
 
   rawMaterial RawMaterial @relation(fields: [rawMaterialId], references: [id], onDelete: Cascade)
@@ -270,11 +272,12 @@ model RawMaterialPurchase {
   @@index([rawMaterialId])
   @@index([businessId])
   @@map("raw_material_purchases")
+  @@schema("public")
 }
 
 model FixedAsset {
   id                     String   @id @default(uuid()) @db.Uuid
-  businessId             String   @map("business_id")
+  businessId             String   @db.Uuid @map("business_id")
   name                   String
   description            String?
   category               String   @default("Equipment")
@@ -292,11 +295,12 @@ model FixedAsset {
 
   @@index([businessId])
   @@map("fixed_assets")
+  @@schema("public")
 }
 
 model Employee {
   id                 String   @id @default(uuid()) @db.Uuid
-  businessId         String   @map("business_id")
+  businessId         String   @db.Uuid @map("business_id")
   name               String
   position           String?
   baseSalary         Decimal  @default(0) @map("base_salary") @db.Decimal(12, 2)
@@ -314,11 +318,12 @@ model Employee {
 
   @@index([businessId])
   @@map("employees")
+  @@schema("public")
 }
 
 model PayrollSettings {
   id                        String   @id @default(uuid()) @db.Uuid
-  businessId                String   @unique @map("business_id")
+  businessId                String   @unique @db.Uuid @map("business_id")
   defaultPensionPercentage  Decimal  @default(5) @map("default_pension_percentage") @db.Decimal(5, 2)
   defaultOvertimeRate       Decimal  @default(2) @map("default_overtime_rate") @db.Decimal(3, 2)
   standardHoursPerPeriod    Decimal  @default(176) @map("standard_hours_per_period") @db.Decimal(6, 2)
@@ -328,11 +333,12 @@ model PayrollSettings {
   business Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   @@map("payroll_settings")
+  @@schema("public")
 }
 
 model PayeBracket {
   id          String   @id @default(uuid()) @db.Uuid
-  businessId  String   @map("business_id")
+  businessId  String   @db.Uuid @map("business_id")
   minIncome   Decimal  @default(0) @map("min_income") @db.Decimal(12, 2)
   maxIncome   Decimal? @map("max_income") @db.Decimal(12, 2)
   ratePercent Decimal  @map("rate_percent") @db.Decimal(5, 2)
@@ -342,12 +348,13 @@ model PayeBracket {
 
   @@index([businessId])
   @@map("paye_brackets")
+  @@schema("public")
 }
 
 model PayrollEntry {
   id               String   @id @default(uuid()) @db.Uuid
-  employeeId       String   @map("employee_id")
-  businessId       String   @map("business_id")
+  employeeId       String   @db.Uuid @map("employee_id")
+  businessId       String   @db.Uuid @map("business_id")
   payPeriodStart   DateTime @map("pay_period_start") @db.Date
   payPeriodEnd     DateTime @map("pay_period_end") @db.Date
   grossPay         Decimal  @default(0) @map("gross_pay") @db.Decimal(12, 2)
@@ -359,7 +366,7 @@ model PayrollEntry {
   status           String   @default("draft")
   paidAt           DateTime? @map("paid_at")
   notes            String?
-  createdBy        String?  @map("created_by")
+  createdBy        String?  @db.Uuid @map("created_by")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @default(now()) @map("updated_at")
 
@@ -369,11 +376,12 @@ model PayrollEntry {
   @@index([businessId, createdAt(sort: Desc)])
   @@index([employeeId])
   @@map("payroll_entries")
+  @@schema("public")
 }
 
 model ChartOfAccount {
   id         String   @id @default(uuid()) @db.Uuid
-  businessId String   @map("business_id")
+  businessId String   @db.Uuid @map("business_id")
   code       String
   name       String
   type       String
@@ -387,30 +395,31 @@ model ChartOfAccount {
   @@unique([businessId, code])
   @@index([businessId])
   @@map("chart_of_accounts")
+  @@schema("public")
 }
 
 model JournalEntry {
   id            String   @id @default(uuid()) @db.Uuid
-  businessId    String   @map("business_id")
+  businessId    String   @db.Uuid @map("business_id")
   entryDate     DateTime @map("entry_date") @db.Date
   description   String
   referenceType String?  @map("reference_type")
-  referenceId   String?  @map("reference_id")
-  createdBy     String?  @map("created_by")
+  referenceId   String?  @db.Uuid @map("reference_id")
+  createdBy     String?  @db.Uuid @map("created_by")
   createdAt     DateTime @default(now()) @map("created_at")
 
   business Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  creator  User?           @relation("JournalCreator", fields: [createdBy], references: [id], onDelete: SetNull)
   lines    JournalLine[]
 
   @@index([businessId, entryDate])
   @@map("journal_entries")
+  @@schema("public")
 }
 
 model JournalLine {
   id              String   @id @default(uuid()) @db.Uuid
-  journalEntryId  String   @map("journal_entry_id")
-  accountId       String   @map("account_id")
+  journalEntryId  String   @db.Uuid @map("journal_entry_id")
+  accountId       String   @db.Uuid @map("account_id")
   debit           Decimal  @default(0) @db.Decimal(14, 2)
   credit          Decimal  @default(0) @db.Decimal(14, 2)
 
@@ -420,20 +429,21 @@ model JournalLine {
   @@index([journalEntryId])
   @@index([accountId])
   @@map("journal_lines")
+  @@schema("public")
 }
 
 model StockMovement {
   id             String   @id @default(uuid()) @db.Uuid
-  businessId     String   @map("business_id")
+  businessId     String   @db.Uuid @map("business_id")
   inventoryType  String   @map("inventory_type")
-  productId      String?  @map("product_id")
-  rawMaterialId  String?  @map("raw_material_id")
+  productId      String?  @db.Uuid @map("product_id")
+  rawMaterialId  String?  @db.Uuid @map("raw_material_id")
   qtyChange      Decimal  @map("qty_change") @db.Decimal(12, 2)
   previousQty    Decimal  @map("previous_qty") @db.Decimal(12, 2)
   newQty         Decimal  @map("new_qty") @db.Decimal(12, 2)
   reason         String   @default("stock_update")
   note           String?
-  createdBy      String?  @map("created_by")
+  createdBy      String?  @db.Uuid @map("created_by")
   createdAt      DateTime @default(now()) @map("created_at")
 
   business    Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
@@ -444,6 +454,7 @@ model StockMovement {
   @@index([productId])
   @@index([rawMaterialId])
   @@map("stock_movements")
+  @@schema("public")
 }
 
 model MalawiHoliday {
@@ -453,4 +464,5 @@ model MalawiHoliday {
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("malawi_holidays")
+  @@schema("public")
 }

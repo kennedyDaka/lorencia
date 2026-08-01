@@ -1,28 +1,45 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { createClient } from "@supabase/supabase-js";
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  private supabase: ReturnType<typeof createClient>;
+
+  constructor(private readonly prisma: PrismaService) {
+    this.supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
 
   async getUserById(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      include: { userRoles: true },
+    const roles = await this.prisma.userRole.findMany({
+      where: { userId: id },
+      include: { business: { select: { id: true, name: true, slug: true } } },
     });
-    if (!user) throw new NotFoundException("User not found");
-    return user;
+
+    const { data: authUser } = await this.supabase.auth.admin.getUserById(id);
+
+    return {
+      id,
+      email: authUser?.user?.email ?? "",
+      roles: roles.map((r) => ({
+        role: r.role,
+        businessId: r.businessId,
+        businessName: r.business?.name ?? null,
+        businessSlug: r.business?.slug ?? null,
+      })),
+    };
   }
 
   async getOrCreateUser(supabaseUserId: string) {
-    const existing = await this.prisma.user.findUnique({
-      where: { id: supabaseUserId },
+    const existing = await this.prisma.userRole.findFirst({
+      where: { userId: supabaseUserId },
     });
-    if (existing) return existing;
+    if (existing) return { id: supabaseUserId };
 
-    return this.prisma.user.create({
-      data: { id: supabaseUserId },
-    });
+    return { id: supabaseUserId };
   }
 
   async assignRole(input: {
@@ -30,8 +47,6 @@ export class UsersService {
     businessId: string;
     role: string;
   }) {
-    await this.getUserById(input.userId);
-
     return this.prisma.userRole.upsert({
       where: {
         userId_businessId_role: {
@@ -75,7 +90,6 @@ export class UsersService {
   async getBusinessUsers(businessId: string) {
     return this.prisma.userRole.findMany({
       where: { businessId },
-      include: { user: true },
     });
   }
 }

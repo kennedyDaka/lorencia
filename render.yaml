@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: lorencia-backend
+    runtime: node
+    region: oregon
+    buildCommand: npm install && npx prisma generate --schema=backend/prisma/schema.prisma && npm run build --workspace=backend
+    startCommand: npx prisma migrate deploy --schema=backend/prisma/schema.prisma && node backend/dist/src/main.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+    healthCheckPath: /api/pos/products/02a8572f-9352-409e-b8b8-bed453205c69
+    autoDeploy: true

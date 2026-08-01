@@ -26,7 +26,7 @@ export function ExpensesPage() {
 
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ["expenses", business],
-    queryFn: () => apiGet<Expense[]>(`/expenses/business/${b?.id ?? ""}`),
+    queryFn: () => apiGet<Expense[]>(`/pos/expenses/business/${b?.id ?? ""}`),
     enabled: !!b,
   });
 
@@ -66,7 +66,7 @@ export function ExpensesPage() {
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to={`/pos/${business}`} className="text-muted-foreground hover:text-foreground">
+            <Link to="/pos/$business" params={{ business }} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <Receipt className="h-5 w-5" />

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/store/auth";
@@ -11,17 +11,18 @@ export function AuthPage() {
   const navigate = useNavigate();
   const { userId } = useAuthStore();
 
+  useEffect(() => {
+    if (userId) {
+      navigate({ to: "/" });
+    }
+  }, [userId, navigate]);
+
   if (userId) {
     return (
       <div className="flex min-h-screen items-center justify-center p-8">
         <div className="text-center space-y-4">
-          <p className="text-muted-foreground">You are already signed in.</p>
-          <Link
-            to="/"
-            className="inline-block rounded-lg bg-primary px-6 py-2 text-primary-foreground font-medium hover:opacity-90"
-          >
-            Go to Home
-          </Link>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]" />
+          <p className="text-muted-foreground">Redirecting to home...</p>
         </div>
       </div>
     );
@@ -43,7 +44,6 @@ export function AuthPage() {
     }
 
     toast.success("Signed in successfully");
-    navigate({ to: "/" });
   };
 
   return (

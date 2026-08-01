@@ -1,0 +1,16 @@
+[
+  {
+    "id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "slug": "cafe",
+    "name": "Lorencia Cafe",
+    "tagline": "Pacific Flats · Nyambadwe",
+    "created_at": "2026-07-05T06:01:01.751443+00:00"
+  },
+  {
+    "id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "slug": "gift-shop",
+    "name": "Lorencia Gift Shop",
+    "tagline": "Cakes · Flowers · Gifts",
+    "created_at": "2026-07-05T06:01:01.751443+00:00"
+  }
+]

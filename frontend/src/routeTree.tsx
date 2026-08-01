@@ -6,7 +6,6 @@ import {
 import { HomePage } from "./pages/home";
 import { AuthPage } from "./pages/auth";
 import { DashboardPage } from "./pages/dashboard";
-import { AuthenticatedLayout } from "./pages/authenticated-layout";
 import { PosPage } from "./pages/pos";
 import { InventoryPage } from "./pages/inventory";
 import { ExpensesPage } from "./pages/expenses";
@@ -37,23 +36,6 @@ const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/dashboard",
   component: DashboardPage,
-});
-
-const authenticatedRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  id: "_authenticated",
-  component: AuthenticatedLayout,
-});
-
-const businessRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: "/$business",
-  component: () => (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold capitalize">Business</h1>
-      <Outlet />
-    </div>
-  ),
 });
 
 const posRoute = createRoute({
@@ -114,8 +96,6 @@ export const routeTree = rootRoute.addChildren([
   indexRoute,
   authRoute,
   dashboardRoute,
-  authenticatedRoute,
-  businessRoute,
   posRoute,
   posInventoryRoute,
   posExpensesRoute,

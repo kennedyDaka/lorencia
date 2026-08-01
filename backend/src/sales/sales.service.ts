@@ -21,72 +21,72 @@ export class SalesService {
     note?: string;
     cashierId?: string;
   }) {
-    return this.prisma.$transaction(async (tx) => {
-      // 1. Validate business exists
-      const biz = await tx.business.findUnique({ where: { id: input.businessId } });
-      if (!biz) throw new NotFoundException("Business not found");
+    return this.prisma.$transaction(
+      async (tx) => {
+        // 1. Validate business exists
+        const biz = await tx.business.findUnique({ where: { id: input.businessId } });
+        if (!biz) throw new NotFoundException("Business not found");
 
-      // 2. Fetch products to get authoritative prices
-      const productIds = input.items.map((i) => i.productId);
-      const products = await tx.product.findMany({
-        where: { id: { in: productIds }, businessId: input.businessId },
-      });
-
-      const productMap = new Map(products.map((p) => [p.id, p]));
-
-      // 3. Validate all products exist, belong to business, and are active
-      for (const item of input.items) {
-        const product = productMap.get(item.productId);
-        if (!product) {
-          throw new BadRequestException(`Product ${item.productName} not found`);
-        }
-        if (!product.isActive) {
-          throw new BadRequestException(`Product ${item.productName} is no longer active`);
-        }
-      }
-
-      // 4. Recalculate total from DB prices
-      let computedTotal = 0;
-      const validatedItems = input.items.map((item) => {
-        const product = productMap.get(item.productId)!;
-        const unitPrice = Number(product.price);
-        computedTotal += unitPrice * item.qty;
-        return {
-          productId: item.productId,
-          productName: item.productName,
-          qty: item.qty,
-          unitPrice,
-        };
-      });
-
-      // 5. Insert sale
-      const sale = await tx.sale.create({
-        data: {
-          businessId: input.businessId,
-          total: computedTotal,
-          paymentMethod: input.paymentMethod,
-          customerId: input.customerId ?? null,
-          note: input.note ?? null,
-          cashierId: input.cashierId ?? null,
-        },
-      });
-
-      // 6. Insert sale items
-      await tx.saleItem.createMany({
-        data: validatedItems.map((item) => ({
-          saleId: sale.id,
-          ...item,
-        })),
-      });
-
-      // 7. Decrement stock (with rollback on failure)
-      for (const item of validatedItems) {
-        const product = await tx.product.findUnique({
-          where: { id: item.productId },
+        // 2. Fetch products to get authoritative prices
+        const productIds = input.items.map((i) => i.productId);
+        const products = await tx.product.findMany({
+          where: { id: { in: productIds }, businessId: input.businessId },
         });
 
-        if (product) {
-          const currentStock = Number(product.stockQty);
+        const productMap = new Map(products.map((p) => [p.id, p]));
+
+        // 3. Validate all products exist, belong to business, and are active
+        for (const item of input.items) {
+          const product = productMap.get(item.productId);
+          if (!product) {
+            throw new BadRequestException(`Product ${item.productName} not found`);
+          }
+          if (!product.isActive) {
+            throw new BadRequestException(`Product ${item.productName} is no longer active`);
+          }
+        }
+
+        // 4. Recalculate total from DB prices
+        let computedTotal = 0;
+        const validatedItems = input.items.map((item) => {
+          const product = productMap.get(item.productId)!;
+          const unitPrice = Number(product.price);
+          computedTotal += unitPrice * item.qty;
+          return {
+            productId: item.productId,
+            productName: item.productName,
+            qty: item.qty,
+            unitPrice,
+            product: product,
+          };
+        });
+
+        // 5. Insert sale
+        const sale = await tx.sale.create({
+          data: {
+            businessId: input.businessId,
+            total: computedTotal,
+            paymentMethod: input.paymentMethod,
+            customerId: input.customerId ?? null,
+            note: input.note ?? null,
+            cashierId: input.cashierId ?? null,
+          },
+        });
+
+        // 6. Insert sale items
+        await tx.saleItem.createMany({
+          data: validatedItems.map((item) => ({
+            saleId: sale.id,
+            productId: item.productId,
+            productName: item.productName,
+            qty: item.qty,
+            unitPrice: item.unitPrice,
+          })),
+        });
+
+        // 7. Decrement stock using already-fetched product data
+        for (const item of validatedItems) {
+          const currentStock = Number(item.product.stockQty);
           if (currentStock > 0) {
             const newQty = Math.max(0, currentStock - item.qty);
             await tx.product.update({
@@ -94,7 +94,6 @@ export class SalesService {
               data: { stockQty: newQty },
             });
 
-            // Log stock movement
             await tx.stockMovement.create({
               data: {
                 businessId: input.businessId,
@@ -108,10 +107,11 @@ export class SalesService {
             });
           }
         }
-      }
 
-      return { id: sale.id, total: computedTotal };
-    });
+        return { id: sale.id, total: computedTotal };
+      },
+      { maxWait: 10000, timeout: 30000 },
+    );
   }
 
   async getSaleById(id: string) {

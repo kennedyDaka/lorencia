@@ -36,12 +36,12 @@ export function CateringPage() {
 
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["catering", business],
-    queryFn: () => apiGet<CateringEvent[]>(`/catering/business/${b?.id ?? ""}`),
+    queryFn: () => apiGet<CateringEvent[]>(`/pos/catering/business/${b?.id ?? ""}`),
     enabled: !!b,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) => apiPost("/catering", data),
+    mutationFn: (data: Record<string, unknown>) => apiPost("/pos/catering", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catering", business] });
       setShowForm(false);
@@ -53,11 +53,12 @@ export function CateringPage() {
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
-      apiPatch(`/catering/${id}/status`, { status }),
+      apiPatch(`/pos/catering/${id}/status`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["catering", business] });
       toast.success("Status updated");
     },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -90,7 +91,7 @@ export function CateringPage() {
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to={`/pos/${business}`} className="text-muted-foreground hover:text-foreground">
+            <Link to="/pos/$business" params={{ business }} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <ChefHat className="h-5 w-5" />

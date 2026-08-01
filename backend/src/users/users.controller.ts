@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Query,
+  Req,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { UsersService } from "./users.service";
@@ -15,6 +16,12 @@ import { UsersService } from "./users.service";
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Get("me")
+  getMe(@Req() req: any) {
+    const user = req.user;
+    return this.usersService.getUserById(user.userId);
+  }
 
   @Get("business/:businessId")
   getBusinessUsers(@Param("businessId") businessId: string) {

@@ -88,7 +88,7 @@ export function ReportsPage() {
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to={`/pos/${business}`} className="text-muted-foreground hover:text-foreground">
+          <Link to="/pos/$business" params={{ business }} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <BarChart3 className="h-5 w-5" />

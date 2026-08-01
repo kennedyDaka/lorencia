@@ -25,6 +25,7 @@ export class ProductsService {
         category: true,
         stockQty: true,
         lowStockThreshold: true,
+        isActive: true,
       },
     });
   }
@@ -79,6 +80,47 @@ export class ProductsService {
       where: { id },
       data: { isActive },
     });
+  }
+
+  async deleteProduct(id: string) {
+    const product = await this.prisma.product.findUnique({ where: { id } });
+    if (!product) throw new NotFoundException("Product not found");
+    return this.prisma.product.delete({ where: { id } });
+  }
+
+  async createPublic(input: {
+    businessId: string;
+    name: string;
+    price: number;
+    stockQty: number;
+    lowStockThreshold?: number;
+    category?: string;
+  }) {
+    return this.prisma.product.create({
+      data: {
+        businessId: input.businessId,
+        name: input.name,
+        price: input.price,
+        stockQty: input.stockQty,
+        lowStockThreshold: input.lowStockThreshold ?? 5,
+        category: input.category ?? null,
+      },
+    });
+  }
+
+  async updatePublic(input: {
+    id: string;
+    name?: string;
+    price?: number;
+    stockQty?: number;
+    lowStockThreshold?: number;
+    category?: string;
+    isActive?: boolean;
+  }) {
+    const product = await this.prisma.product.findUnique({ where: { id: input.id } });
+    if (!product) throw new NotFoundException("Product not found");
+    const { id, ...updates } = input;
+    return this.prisma.product.update({ where: { id }, data: updates });
   }
 
   private async verifyAccess(businessId: string, userId: string) {

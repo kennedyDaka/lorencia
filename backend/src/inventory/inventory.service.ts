@@ -81,7 +81,7 @@ export class InventoryService {
     >`
       SELECT id, name, stock_qty AS "stockQty", low_stock_threshold AS "lowStockThreshold"
       FROM products
-      WHERE business_id = ${businessId}
+      WHERE business_id = ${businessId}::uuid
         AND is_active = true
         AND stock_qty <= low_stock_threshold
     `;

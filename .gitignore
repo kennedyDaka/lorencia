@@ -1,11 +1,21 @@
+# Node.js
 node_modules/
 dist/
+*.log
+
+# Environment
 .env
 .env.local
 .env.*.local
-*.log
+
+# IDE
 .DS_Store
+.vscode/
+.idea/
+
+# Vercel
 .vercel/
 .vercel/output/
+
+# Turbo
 .turbo/
-prisma/migrations/

@@ -1,0 +1,302 @@
+[
+  {
+    "id": "ab0c16cf-61d4-419c-ad9a-8e91137a646a",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "1100",
+    "name": "Cash",
+    "type": "asset",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "2a41b25b-e672-47a6-a1ad-0b28f798b5c4",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "1200",
+    "name": "Stock & Materials",
+    "type": "asset",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "3996d180-8bc6-43e2-a065-bc94419e8b07",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "1300",
+    "name": "Equipment & Assets",
+    "type": "asset",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "d4881c7f-0a92-47ee-91d1-a32c082de8c6",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "2100",
+    "name": "PAYE Tax Payable",
+    "type": "liability",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "5729ff94-7304-4ab1-b670-732f1248d536",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "2200",
+    "name": "Pension Payable",
+    "type": "liability",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "0fd2f691-ca2b-4db4-966e-d12db2f2f061",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "3100",
+    "name": "Owner Investment",
+    "type": "equity",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "e56c03e5-2a90-49b6-8374-42e304e21ac2",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "3200",
+    "name": "Profits Kept",
+    "type": "equity",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "71b8dcf8-3bc4-4253-b0c3-1cb69880939e",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "4100",
+    "name": "Sales Income",
+    "type": "income",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "9e64e304-3bac-4dd8-888d-19461e303867",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "4200",
+    "name": "Catering Income",
+    "type": "income",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "3142a8f6-d25a-4821-aae9-2d36c0b75ace",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "5100",
+    "name": "Staff Salaries",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "6cf46e26-75c7-493c-9c0d-606dddcecff0",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "5200",
+    "name": "Raw Materials",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "7de8179d-59ee-4b62-ac48-5ae4603a044a",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "5300",
+    "name": "Operating Expenses",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "ab08732f-73c4-4c72-9cff-5ff823f35a08",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "5400",
+    "name": "Depreciation",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "1537426e-7197-4819-9178-2bfa0ad6575a",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "1100",
+    "name": "Cash",
+    "type": "asset",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "61e0485a-5d4a-4416-93f2-be1785457872",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "1200",
+    "name": "Stock & Materials",
+    "type": "asset",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "599580b4-ae6b-4f1e-9c2a-8e5b510a8c25",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "1300",
+    "name": "Equipment & Assets",
+    "type": "asset",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "21d70924-1ad1-4d14-a609-e5c9ef0376aa",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "2100",
+    "name": "PAYE Tax Payable",
+    "type": "liability",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "9d8081d7-8313-435a-b871-2891ea89b190",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "2200",
+    "name": "Pension Payable",
+    "type": "liability",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "fe415c43-a2ef-41b5-8f6c-bced674f9583",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "3100",
+    "name": "Owner Investment",
+    "type": "equity",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "3e009d44-bdab-4378-aa6c-c670d1c696d1",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "3200",
+    "name": "Profits Kept",
+    "type": "equity",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "11428ed2-a8a8-4f82-abbe-35411b8c5c9b",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "4100",
+    "name": "Sales Income",
+    "type": "income",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "d0b89b9d-4443-4a9f-8ff8-65ee996d98b7",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "4200",
+    "name": "Catering Income",
+    "type": "income",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "4254aa0f-d35b-4202-b5d7-ad101e5add1e",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "5100",
+    "name": "Staff Salaries",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "c2dbaf23-92ea-4dc2-b408-d3fcefb30db1",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "5200",
+    "name": "Raw Materials",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "b80a5a6e-4464-4b11-bcb2-81ceb9acc129",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "5300",
+    "name": "Operating Expenses",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "a84dedf1-a20c-4abb-b3e3-2d3b7715d970",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "5400",
+    "name": "Depreciation",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-06T05:09:20.972706+00:00"
+  },
+  {
+    "id": "47b9b32d-b1e4-4f0d-bbd5-c929706e60d8",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "1150",
+    "name": "Accounts Receivable",
+    "type": "asset",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-14T11:24:09.047761+00:00"
+  },
+  {
+    "id": "7ffb1347-3f21-4f74-b676-89268b6f5816",
+    "business_id": "02a8572f-9352-409e-b8b8-bed453205c69",
+    "code": "5500",
+    "name": "Catering Costs",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-14T11:24:09.047761+00:00"
+  },
+  {
+    "id": "5c4de637-dacf-4cfa-8715-7b4ec3e54209",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "1150",
+    "name": "Accounts Receivable",
+    "type": "asset",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-14T11:24:09.047761+00:00"
+  },
+  {
+    "id": "09cf6709-7d16-49cf-ae10-0d9c9d1df604",
+    "business_id": "1b8a5f49-fcb4-422c-ac96-51ee3f3a95c4",
+    "code": "5500",
+    "name": "Catering Costs",
+    "type": "expense",
+    "is_system": true,
+    "is_active": true,
+    "created_at": "2026-07-14T11:24:09.047761+00:00"
+  }
+]

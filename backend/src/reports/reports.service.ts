@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 
+const toNum = (v: unknown): number => Number(v ?? 0);
+
 @Injectable()
 export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -54,14 +56,14 @@ export class ReportsService {
 
     return {
       totalRevenue: {
-        today: todaySales._sum.total ?? 0,
-        thisMonth: monthSales._sum.total ?? 0,
-        thisYear: yearSales._sum.total ?? 0,
+        today: toNum(todaySales._sum.total),
+        thisMonth: toNum(monthSales._sum.total),
+        thisYear: toNum(yearSales._sum.total),
       },
       totalExpenses: {
-        today: todayExpenses._sum.amount ?? 0,
-        thisMonth: monthExpenses._sum.amount ?? 0,
-        thisYear: yearExpenses._sum.amount ?? 0,
+        today: toNum(todayExpenses._sum.amount),
+        thisMonth: toNum(monthExpenses._sum.amount),
+        thisYear: toNum(yearExpenses._sum.amount),
       },
       recentSales,
       lowStockCount,
@@ -81,17 +83,17 @@ export class ReportsService {
       }),
     ]);
 
-    const revenue = salesAggregate._sum.total ?? 0;
-    const totalExpenses = expenses.reduce((acc, e) => acc + Number(e._sum.amount ?? 0), 0);
+    const revenue = toNum(salesAggregate._sum.total);
+    const totalExpenses = expenses.reduce((acc, e) => acc + toNum(e._sum.amount), 0);
 
     return {
       revenue,
       expenses: expenses.map((e) => ({
         category: e.category,
-        total: e._sum.amount ?? 0,
+        total: toNum(e._sum.amount),
       })),
       totalExpenses,
-      netProfit: Number(revenue) - totalExpenses,
+      netProfit: revenue - totalExpenses,
     };
   }
 
@@ -125,11 +127,11 @@ export class ReportsService {
     ]);
 
     return {
-      totalSales: totalAggregate._sum.total ?? 0,
+      totalSales: toNum(totalAggregate._sum.total),
       totalCount: totalAggregate._count,
       byPaymentMethod: byPaymentMethod.map((pm) => ({
         method: pm.paymentMethod,
-        total: pm._sum.total ?? 0,
+        total: toNum(pm._sum.total),
         count: pm._count,
       })),
       topProducts,
@@ -152,10 +154,10 @@ export class ReportsService {
     ]);
 
     return {
-      totalExpenses: totalAggregate._sum.amount ?? 0,
+      totalExpenses: toNum(totalAggregate._sum.amount),
       byCategory: byCategory.map((c) => ({
         category: c.category,
-        total: c._sum.amount ?? 0,
+        total: toNum(c._sum.amount),
         count: c._count,
       })),
     };

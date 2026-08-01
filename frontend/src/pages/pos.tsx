@@ -2,11 +2,23 @@ import { Link, useParams } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost } from "@/services/api";
 import { BUSINESSES } from "@/lib/businesses";
-import { formatMK } from "@/lib/utils";
-import { ShoppingCart, ArrowLeft, Package, Receipt, Users, ChefHat, Boxes, BookOpen, Wallet, BarChart3, Loader2, Check } from "lucide-react";
+import { formatMK, buildReceiptHTML } from "@/lib/utils";
+import {
+  ShoppingCart,
+  ArrowLeft,
+  Package,
+  Receipt,
+  Users,
+  ChefHat,
+  Boxes,
+  BookOpen,
+  Wallet,
+  BarChart3,
+  Loader2,
+  Check,
+} from "lucide-react";
 import { useState } from "react";
 import { useAuthStore } from "@/store/auth";
-import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 interface Product {
@@ -25,7 +37,8 @@ interface CartItem {
 export function PosPage() {
   const { business } = useParams({ from: "/pos/$business" });
   const b = BUSINESSES[business as keyof typeof BUSINESSES];
-  const { userId } = useAuthStore();
+  const { userId, role } = useAuthStore();
+  const isAdmin = !!userId && (role === "owner" || role === "admin");
   const queryClient = useQueryClient();
 
   const { data: products = [], isLoading } = useQuery({
@@ -36,7 +49,13 @@ export function PosPage() {
 
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [search, setSearch] = useState("");
-  const [showReceipt, setShowReceipt] = useState<{ saleId: string; total: number } | null>(null);
+  const [showReceipt, setShowReceipt] = useState<{
+    saleId: string;
+    total: number;
+    items: Array<{ productName: string; qty: number; unitPrice: number }>;
+    paymentMethod: string;
+    createdAt: string;
+  } | null>(null);
 
   const checkoutMutation = useMutation({
     mutationFn: (data: {
@@ -48,7 +67,18 @@ export function PosPage() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["pos-products", business] });
       setCart({});
-      setShowReceipt({ saleId: result.id, total: result.total });
+      const cartItemsArr = Object.values(cart);
+      setShowReceipt({
+        saleId: result.id,
+        total: result.total,
+        items: cartItemsArr.map((ci) => ({
+          productName: ci.product.name,
+          qty: ci.qty,
+          unitPrice: Number(ci.product.price),
+        })),
+        paymentMethod: "cash",
+        createdAt: new Date().toISOString(),
+      });
       toast.success("Sale completed!");
     },
     onError: (error: Error) => {
@@ -57,9 +87,17 @@ export function PosPage() {
   });
 
   const addToCart = (product: Product) => {
+    if (product.stockQty <= 0) {
+      toast.error(`${product.name} is out of stock`);
+      return;
+    }
     setCart((prev) => {
       const existing = prev[product.id];
       if (existing) {
+        if (existing.qty >= product.stockQty) {
+          toast.error(`Only ${product.stockQty} in stock`);
+          return prev;
+        }
         return { ...prev, [product.id]: { ...existing, qty: existing.qty + 1 } };
       }
       return { ...prev, [product.id]: { product, qty: 1 } };
@@ -89,7 +127,6 @@ export function PosPage() {
 
   const handleCheckout = () => {
     if (!b || cartItems.length === 0) return;
-
     checkoutMutation.mutate({
       businessId: b.id,
       items: cartItems.map((item) => ({
@@ -103,13 +140,33 @@ export function PosPage() {
     });
   };
 
-  // Filter products by search
-  const filteredProducts = products.filter((p) =>
-    search === "" || p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.category?.toLowerCase().includes(search.toLowerCase()),
+  const handlePrintReceipt = () => {
+    if (!showReceipt || !b) return;
+    const html = buildReceiptHTML({
+      id: showReceipt.saleId,
+      total: showReceipt.total,
+      paymentMethod: showReceipt.paymentMethod,
+      createdAt: showReceipt.createdAt,
+      items: showReceipt.items,
+      businessName: b.name,
+    });
+    const w = window.open("", "_blank", "width=400,height=600");
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      w.print();
+      w.close();
+    }
+  };
+
+  const filteredProducts = products.filter(
+    (p) =>
+      search === "" ||
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.category?.toLowerCase().includes(search.toLowerCase()),
   );
 
-  // Group products by category
   const categories = [...new Set(filteredProducts.map((p) => p.category).filter(Boolean))];
 
   if (!b) {
@@ -124,19 +181,29 @@ export function PosPage() {
   if (showReceipt) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-card rounded-xl p-6 max-w-sm w-full text-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto">
-            <Check className="h-8 w-8 text-success" />
+        <div className="bg-card rounded-2xl p-8 max-w-sm w-full text-center space-y-6 shadow-xl">
+          <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
+            <Check className="h-10 w-10 text-green-600" />
           </div>
-          <h2 className="text-xl font-bold">Sale Completed!</h2>
-          <p className="text-muted-foreground">Sale ID: {showReceipt.saleId.slice(0, 8)}...</p>
-          <p className="text-2xl font-bold text-primary">{formatMK(showReceipt.total)}</p>
-          <button
-            onClick={() => setShowReceipt(null)}
-            className="w-full rounded-lg bg-primary px-4 py-2.5 text-primary-foreground font-medium hover:opacity-90"
-          >
-            New Sale
-          </button>
+          <div>
+            <h2 className="text-2xl font-bold">Sale Completed!</h2>
+            <p className="text-muted-foreground mt-1">Sale #{showReceipt.saleId.slice(0, 8)}</p>
+          </div>
+          <div className="text-3xl font-bold text-primary">{formatMK(showReceipt.total)}</div>
+          <div className="space-y-3">
+            <button
+              onClick={handlePrintReceipt}
+              className="w-full rounded-lg bg-primary px-4 py-3 text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+            >
+              Print Receipt
+            </button>
+            <button
+              onClick={() => setShowReceipt(null)}
+              className="w-full rounded-lg border border-border px-4 py-3 font-medium hover:bg-muted transition-colors"
+            >
+              New Sale
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -148,54 +215,68 @@ export function PosPage() {
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/" className="text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <h1 className="text-lg font-bold">{b.name}</h1>
-          </div>
-          <div className="flex items-center gap-3">
-            {userId && (
-              <>
-                <Link to={`/pos/${business}/inventory`} className="text-sm text-muted-foreground hover:text-foreground">
-                  <Package className="h-4 w-4 inline mr-1" />Inventory
-                </Link>
-                <Link to={`/pos/${business}/expenses`} className="text-sm text-muted-foreground hover:text-foreground">
-                  <Receipt className="h-4 w-4 inline mr-1" />Expenses
-                </Link>
-                <Link to={`/pos/${business}/customers`} className="text-sm text-muted-foreground hover:text-foreground">
-                  <Users className="h-4 w-4 inline mr-1" />Customers
-                </Link>
-                <Link to={`/pos/${business}/catering`} className="text-sm text-muted-foreground hover:text-foreground">
-                  <ChefHat className="h-4 w-4 inline mr-1" />Catering
-                </Link>
-                <Link to={`/pos/${business}/raw-materials`} className="text-sm text-muted-foreground hover:text-foreground">
-                  <Boxes className="h-4 w-4 inline mr-1" />Materials
-                </Link>
-                <Link to={`/pos/${business}/accounting`} className="text-sm text-muted-foreground hover:text-foreground">
-                  <BookOpen className="h-4 w-4 inline mr-1" />Accounting
-                </Link>
-                <Link to={`/pos/${business}/payroll`} className="text-sm text-muted-foreground hover:text-foreground">
-                  <Wallet className="h-4 w-4 inline mr-1" />Payroll
-                </Link>
-                <Link to={`/pos/${business}/reports`} className="text-sm text-muted-foreground hover:text-foreground">
-                  <BarChart3 className="h-4 w-4 inline mr-1" />Reports
-                </Link>
-                <button onClick={() => supabase.auth.signOut()} className="text-sm text-muted-foreground hover:text-foreground">
-                  Sign out
-                </button>
-              </>
-            )}
-            {!userId && (
-              <Link to="/auth" className="text-sm text-muted-foreground hover:text-foreground">
-                Staff sign in
+            {isAdmin && (
+              <Link to="/" className="text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-5 w-5" />
               </Link>
             )}
+            <h1 className="text-lg font-bold">{b.name}</h1>
           </div>
+          {isAdmin ? (
+            <div className="flex items-center gap-3">
+              <Link to="/pos/$business/inventory" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                <Package className="h-4 w-4 inline mr-1" />Inventory
+              </Link>
+              <Link to="/pos/$business/expenses" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                <Receipt className="h-4 w-4 inline mr-1" />Expenses
+              </Link>
+              <Link to="/pos/$business/customers" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                <Users className="h-4 w-4 inline mr-1" />Customers
+              </Link>
+              {b?.hasCatering && (
+                <Link to="/pos/$business/catering" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                  <ChefHat className="h-4 w-4 inline mr-1" />Catering
+                </Link>
+              )}
+              {b?.hasRawMaterials && (
+                <Link to="/pos/$business/raw-materials" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                  <Boxes className="h-4 w-4 inline mr-1" />Materials
+                </Link>
+              )}
+              <Link to="/pos/$business/accounting" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                <BookOpen className="h-4 w-4 inline mr-1" />Accounting
+              </Link>
+              <Link to="/pos/$business/payroll" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                <Wallet className="h-4 w-4 inline mr-1" />Payroll
+              </Link>
+              <Link to="/pos/$business/reports" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                <BarChart3 className="h-4 w-4 inline mr-1" />Reports
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <Link to="/pos/$business/inventory" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                <Package className="h-4 w-4 inline mr-1" />Inventory
+              </Link>
+              <Link to="/pos/$business/expenses" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                <Receipt className="h-4 w-4 inline mr-1" />Expenses
+              </Link>
+              {b?.hasCatering && (
+                <Link to="/pos/$business/catering" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                  <ChefHat className="h-4 w-4 inline mr-1" />Catering
+                </Link>
+              )}
+              {b?.hasRawMaterials && (
+                <Link to="/pos/$business/raw-materials" params={{ business }} className="text-sm text-muted-foreground hover:text-foreground">
+                  <Boxes className="h-4 w-4 inline mr-1" />Materials
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-4">
-        {/* Search */}
         <div className="mb-4">
           <input
             type="text"
@@ -206,7 +287,6 @@ export function PosPage() {
           />
         </div>
 
-        {/* Products */}
         {isLoading ? (
           <div className="text-center text-muted-foreground py-12">Loading products...</div>
         ) : filteredProducts.length === 0 ? (
@@ -227,7 +307,7 @@ export function PosPage() {
                 )}
                 <div className="text-primary font-bold mt-2">{formatMK(Number(product.price))}</div>
                 {product.stockQty > 0 && product.stockQty <= 10 && (
-                  <div className="text-xs text-warning mt-1">Low stock: {product.stockQty}</div>
+                  <div className="text-xs text-amber-600 mt-1">Low stock: {product.stockQty}</div>
                 )}
               </button>
             ))}
@@ -251,7 +331,7 @@ export function PosPage() {
                         <div className="font-medium text-sm">{product.name}</div>
                         <div className="text-primary font-bold mt-2">{formatMK(Number(product.price))}</div>
                         {product.stockQty > 0 && product.stockQty <= 10 && (
-                          <div className="text-xs text-warning mt-1">Low stock: {product.stockQty}</div>
+                          <div className="text-xs text-amber-600 mt-1">Low stock: {product.stockQty}</div>
                         )}
                       </button>
                     ))}
@@ -269,9 +349,7 @@ export function PosPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
-                <span className="font-medium">
-                  {cartItems.reduce((s, i) => s + i.qty, 0)} items
-                </span>
+                <span className="font-medium">{cartItems.reduce((s, i) => s + i.qty, 0)} items</span>
               </div>
               <button onClick={clearCart} className="text-sm text-muted-foreground hover:text-foreground">
                 Clear

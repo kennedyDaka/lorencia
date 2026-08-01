@@ -1,9 +1,9 @@
 import { Link, useParams } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost } from "@/services/api";
+import { apiGet, apiPost, apiPatch, apiDelete } from "@/services/api";
 import { BUSINESSES } from "@/lib/businesses";
 import { formatMK } from "@/lib/utils";
-import { ArrowLeft, Package, AlertTriangle, Plus, Minus, Loader2 } from "lucide-react";
+import { ArrowLeft, Package, AlertTriangle, Plus, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -29,6 +29,8 @@ interface StockMovement {
   createdAt: string;
 }
 
+const emptyProduct = { name: "", price: "", stockQty: "", lowStockThreshold: "5", category: "" };
+
 export function InventoryPage() {
   const { business } = useParams({ from: "/pos/$business/inventory" });
   const b = BUSINESSES[business as keyof typeof BUSINESSES];
@@ -37,6 +39,10 @@ export function InventoryPage() {
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
   const [adjustQty, setAdjustQty] = useState("");
   const [adjustReason, setAdjustReason] = useState("manual_adjustment");
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addForm, setAddForm] = useState(emptyProduct);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", price: "", category: "", lowStockThreshold: "" });
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["pos-products", business],
@@ -46,19 +52,19 @@ export function InventoryPage() {
 
   const { data: lowStock = [] } = useQuery({
     queryKey: ["low-stock", business],
-    queryFn: () => apiGet<Product[]>(`/inventory/low-stock/${b?.id ?? ""}`),
+    queryFn: () => apiGet<Product[]>(`/pos/inventory/low-stock?businessId=${b?.id ?? ""}`),
     enabled: !!b,
   });
 
   const { data: movements = [] } = useQuery({
     queryKey: ["stock-movements", business],
-    queryFn: () => apiGet<StockMovement[]>(`/inventory/movements/${b?.id ?? ""}`),
+    queryFn: () => apiGet<StockMovement[]>(`/pos/inventory/movements?businessId=${b?.id ?? ""}`),
     enabled: !!b,
   });
 
   const adjustMutation = useMutation({
     mutationFn: (data: { businessId: string; productId: string; newQty: number; reason: string }) =>
-      apiPost("/inventory/adjust", data),
+      apiPost("/pos/inventory/adjust", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pos-products", business] });
       queryClient.invalidateQueries({ queryKey: ["low-stock", business] });
@@ -66,6 +72,38 @@ export function InventoryPage() {
       setAdjustingProduct(null);
       setAdjustQty("");
       toast.success("Stock adjusted");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => apiPost("/pos/products", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pos-products", business] });
+      setShowAddForm(false);
+      setAddForm(emptyProduct);
+      toast.success("Product added");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: Record<string, unknown>) => apiPatch("/pos/products", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pos-products", business] });
+      setEditingProduct(null);
+      toast.success("Product updated");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiDelete(`/pos/products/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pos-products", business] });
+      queryClient.invalidateQueries({ queryKey: ["low-stock", business] });
+      queryClient.invalidateQueries({ queryKey: ["stock-movements", business] });
+      toast.success("Product deleted");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -78,12 +116,55 @@ export function InventoryPage() {
 
   const handleAdjust = () => {
     if (!adjustingProduct || !adjustQty || !b) return;
+    const parsed = Number(adjustQty);
+    if (!Number.isFinite(parsed) || parsed < 0) return;
     adjustMutation.mutate({
       businessId: b.id,
       productId: adjustingProduct.id,
-      newQty: parseInt(adjustQty),
+      newQty: parsed,
       reason: adjustReason,
     });
+  };
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!b || !addForm.name) return;
+    const price = parseFloat(addForm.price);
+    const stockQty = parseFloat(addForm.stockQty);
+    if (!Number.isFinite(price) || !Number.isFinite(stockQty)) {
+      toast.error("Price and stock must be valid numbers");
+      return;
+    }
+    createMutation.mutate({
+      businessId: b.id,
+      name: addForm.name,
+      price,
+      stockQty,
+      lowStockThreshold: parseFloat(addForm.lowStockThreshold) || 5,
+      category: addForm.category || undefined,
+    });
+  };
+
+  const handleEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProduct) return;
+    const price = parseFloat(editForm.price);
+    if (!Number.isFinite(price)) {
+      toast.error("Price must be a valid number");
+      return;
+    }
+    updateMutation.mutate({
+      id: editingProduct.id,
+      name: editForm.name,
+      price,
+      category: editForm.category || undefined,
+      lowStockThreshold: parseFloat(editForm.lowStockThreshold) || 5,
+    });
+  };
+
+  const handleDelete = (product: Product) => {
+    if (!confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+    deleteMutation.mutate(product.id);
   };
 
   if (!b) {
@@ -93,16 +174,64 @@ export function InventoryPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-10 bg-card border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-3">
-          <Link to={`/pos/${business}`} className="text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <Package className="h-5 w-5" />
-          <h1 className="text-lg font-bold">Inventory</h1>
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/pos/$business" params={{ business }} className="text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <Package className="h-5 w-5" />
+            <h1 className="text-lg font-bold">Inventory</h1>
+          </div>
+          <button onClick={() => setShowAddForm(!showAddForm)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground font-medium hover:opacity-90">
+            <Plus className="h-4 w-4" /> Add Product
+          </button>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-4 space-y-6">
+        {/* Add Product Form */}
+        {showAddForm && (
+          <form onSubmit={handleAdd} className="rounded-lg border border-border bg-card p-4 space-y-4">
+            <h2 className="font-medium">Add New Product</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium">Name *</label>
+                <input type="text" value={addForm.name} onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Price (MWK) *</label>
+                <input type="number" value={addForm.price} onChange={(e) => setAddForm({ ...addForm, price: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" min="0" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Category</label>
+                <input type="text" value={addForm.category} onChange={(e) => setAddForm({ ...addForm, category: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" placeholder="e.g. Coffee, Pastries" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Initial Stock *</label>
+                <input type="number" value={addForm.stockQty} onChange={(e) => setAddForm({ ...addForm, stockQty: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" min="0" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Low Stock Threshold</label>
+                <input type="number" value={addForm.lowStockThreshold} onChange={(e) => setAddForm({ ...addForm, lowStockThreshold: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" min="0" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShowAddForm(false)}
+                className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted">Cancel</button>
+              <button type="submit" disabled={createMutation.isPending}
+                className="rounded-lg bg-primary px-4 py-2 text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center gap-2">
+                {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Add Product
+              </button>
+            </div>
+          </form>
+        )}
+
         {/* Low Stock Alert */}
         {lowStock.length > 0 && (
           <div className="rounded-lg border border-warning/50 bg-warning/5 p-4">
@@ -157,15 +286,39 @@ export function InventoryPage() {
                       </td>
                       <td className="px-4 py-3 text-right text-muted-foreground">{product.lowStockThreshold}</td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => {
-                            setAdjustingProduct(product);
-                            setAdjustQty(String(product.stockQty));
-                          }}
-                          className="text-primary hover:underline text-sm"
-                        >
-                          Adjust
-                        </button>
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            onClick={() => {
+                              setAdjustingProduct(product);
+                              setAdjustQty(String(product.stockQty));
+                            }}
+                            className="text-primary hover:underline text-sm"
+                          >
+                            Adjust
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingProduct(product);
+                              setEditForm({
+                                name: product.name,
+                                price: String(Number(product.price)),
+                                category: product.category || "",
+                                lowStockThreshold: String(product.lowStockThreshold),
+                              });
+                            }}
+                            className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
+                            title="Edit product"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(product)}
+                            className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                            title="Delete product"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -209,7 +362,7 @@ export function InventoryPage() {
         )}
       </div>
 
-      {/* Adjust Modal */}
+      {/* Adjust Stock Modal */}
       {adjustingProduct && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-xl p-6 max-w-sm w-full space-y-4">
@@ -255,6 +408,45 @@ export function InventoryPage() {
                 Save
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Product Modal */}
+      {editingProduct && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl p-6 max-w-sm w-full space-y-4">
+            <h2 className="text-lg font-bold">Edit Product</h2>
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Name</label>
+                <input type="text" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Price (MWK)</label>
+                <input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" min="0" required />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Category</label>
+                <input type="text" value={editForm.category} onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Low Stock Threshold</label>
+                <input type="number" value={editForm.lowStockThreshold} onChange={(e) => setEditForm({ ...editForm, lowStockThreshold: e.target.value })}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" min="0" />
+              </div>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setEditingProduct(null)}
+                  className="flex-1 rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted">Cancel</button>
+                <button type="submit" disabled={updateMutation.isPending}
+                  className="flex-1 rounded-lg bg-primary px-4 py-2 text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-2">
+                  {updateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

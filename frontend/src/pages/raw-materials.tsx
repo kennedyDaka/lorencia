@@ -29,12 +29,12 @@ export function RawMaterialsPage() {
 
   const { data: materials = [], isLoading } = useQuery({
     queryKey: ["raw-materials", business],
-    queryFn: () => apiGet<RawMaterial[]>(`/raw-materials/business/${b?.id ?? ""}`),
+    queryFn: () => apiGet<RawMaterial[]>(`/pos/raw-materials/business/${b?.id ?? ""}`),
     enabled: !!b,
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) => apiPost("/raw-materials", data),
+    mutationFn: (data: Record<string, unknown>) => apiPost("/pos/raw-materials", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["raw-materials", business] });
       setShowForm(false);
@@ -45,7 +45,7 @@ export function RawMaterialsPage() {
   });
 
   const purchaseMutation = useMutation({
-    mutationFn: (data: Record<string, unknown>) => apiPost("/raw-materials/purchase", data),
+    mutationFn: (data: Record<string, unknown>) => apiPost("/pos/raw-materials/purchase", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["raw-materials", business] });
       setShowPurchase(null);
@@ -90,7 +90,7 @@ export function RawMaterialsPage() {
       <div className="sticky top-0 z-10 bg-card border-b border-border">
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to={`/pos/${business}`} className="text-muted-foreground hover:text-foreground">
+            <Link to="/pos/$business" params={{ business }} className="text-muted-foreground hover:text-foreground">
               <ArrowLeft className="h-5 w-5" />
             </Link>
             <Boxes className="h-5 w-5" />
