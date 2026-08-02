@@ -1,0 +1,18 @@
+[
+  {
+    "id": "3e9b9bab-35a3-4e74-94d3-2cdbae6e50b2",
+    "sale_id": "463bbd15-a85c-48cc-b076-972023891aa2",
+    "product_id": "1d07baee-c194-4ec0-b3b8-23b7217b2110",
+    "product_name": "Cocopina",
+    "qty": 1,
+    "unit_price": 1500
+  },
+  {
+    "id": "514f3c92-8df7-4a9d-a2a6-53f30b379f08",
+    "sale_id": "7b51d42d-9a19-42c4-9922-db366077355b",
+    "product_id": "cf8bf48c-4c56-4b18-9505-39802ffccc3e",
+    "product_name": "Coke",
+    "qty": 1,
+    "unit_price": 1500
+  }
+]

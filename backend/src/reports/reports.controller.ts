@@ -44,4 +44,26 @@ export class ReportsController {
     const toDate = to ? new Date(to) : new Date();
     return this.reportsService.getExpenseReport(businessId, fromDate, toDate);
   }
+
+  @Get("sales-detail/business/:businessId")
+  getDetailedSales(
+    @Param("businessId") businessId: string,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), 0, 1);
+    const toDate = to ? new Date(to) : new Date();
+    return this.reportsService.getDetailedSales(businessId, fromDate, toDate);
+  }
+
+  @Get("expenses-detail/business/:businessId")
+  getDetailedExpenses(
+    @Param("businessId") businessId: string,
+    @Query("from") from?: string,
+    @Query("to") to?: string,
+  ) {
+    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), 0, 1);
+    const toDate = to ? new Date(to) : new Date();
+    return this.reportsService.getDetailedExpenses(businessId, fromDate, toDate);
+  }
 }

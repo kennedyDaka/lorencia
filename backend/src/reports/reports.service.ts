@@ -162,4 +162,64 @@ export class ReportsService {
       })),
     };
   }
+
+  async getDetailedSales(businessId: string, from: Date, to: Date) {
+    const sales = await this.prisma.sale.findMany({
+      where: { businessId, createdAt: { gte: from, lte: to } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: true,
+        customer: { select: { name: true } },
+      },
+    });
+
+    const rows = sales.map((s) => ({
+      id: s.id,
+      date: s.createdAt,
+      customer: s.customer?.name ?? "Walk-in",
+      paymentMethod: s.paymentMethod,
+      total: toNum(s.total),
+      itemCount: s.items.length,
+      items: s.items.map((i) => ({
+        productName: i.productName,
+        qty: toNum(i.qty),
+        unitPrice: toNum(i.unitPrice),
+        lineTotal: toNum(i.qty) * toNum(i.unitPrice),
+      })),
+      note: s.note,
+    }));
+
+    const totalRevenue = rows.reduce((acc, r) => acc + r.total, 0);
+    const totalItems = rows.reduce((acc, r) => acc + r.itemCount, 0);
+
+    return { sales: rows, totalRevenue, totalSales: rows.length, totalItems };
+  }
+
+  async getDetailedExpenses(businessId: string, from: Date, to: Date) {
+    const expenses = await this.prisma.expense.findMany({
+      where: { businessId, createdAt: { gte: from, lte: to } },
+      orderBy: { createdAt: "desc" },
+      include: {
+        items: true,
+      },
+    });
+
+    const rows = expenses.map((e) => ({
+      id: e.id,
+      date: e.createdAt,
+      category: e.category,
+      amount: toNum(e.amount),
+      note: e.note,
+      items: e.items.map((i) => ({
+        description: i.description,
+        qty: toNum(i.qty),
+        unitPrice: toNum(i.unitPrice),
+        lineTotal: toNum(i.qty) * toNum(i.unitPrice),
+      })),
+    }));
+
+    const totalAmount = rows.reduce((acc, r) => acc + r.amount, 0);
+
+    return { expenses: rows, totalExpenses: totalAmount, totalEntries: rows.length };
+  }
 }
