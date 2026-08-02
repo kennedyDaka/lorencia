@@ -16,6 +16,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useState, useCallback } from "react";
+import * as XLSX from "xlsx";
 
 interface DashboardData {
   totalRevenue: { today: number; thisMonth: number; thisYear: number };
@@ -93,23 +94,81 @@ function thirtyDaysAgo() {
   return d.toISOString().slice(0, 10);
 }
 
-function downloadCSV(filename: string, csv: string) {
-  const BOM = "\uFEFF";
-  const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+function autoFitColumns(rows: (string | number)[][]): { wch: number }[] {
+  const cols: { wch: number }[] = [];
+  for (let c = 0; c < rows[0].length; c++) {
+    let max = 10;
+    for (const row of rows) {
+      const val = row[c] != null ? String(row[c]) : "";
+      if (val.length > max) max = val.length;
+    }
+    cols.push({ wch: max + 2 });
+  }
+  return cols;
+}
+
+function exportSheet(
+  ws: XLSX.WorkSheet,
+  data: (string | number)[][],
+  headers: string[],
+  currencyCols: number[],
+  dateCols: number[],
+) {
+  const [headerRow, ...bodyRows] = data;
+
+  XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A1" });
+
+  for (let r = 0; r < bodyRows.length; r++) {
+    for (let c = 0; c < bodyRows[r].length; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r: r + 1, c });
+      ws[cellRef] = { v: bodyRows[r][c], t: "s" };
+    }
+  }
+
+  const range = XLSX.utils.decode_range(ws["!ref"]!);
+
+  for (let c = 0; c < headerRow.length; c++) {
+    const colLetter = XLSX.utils.encode_col(c);
+    const cellRef = `${colLetter}1`;
+    if (ws[cellRef]) {
+      ws[cellRef].s = {
+        font: { bold: true, color: { rgb: "FFFFFF" } },
+        fill: { fgColor: { rgb: "503828" } },
+        alignment: { horizontal: "center" },
+      };
+    }
+  }
+
+  for (const c of dateCols) {
+    for (let r = 1; r <= range.e.r; r++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (ws[cellRef] && ws[cellRef].v) {
+        ws[cellRef].z = "DD-MMM-YYYY";
+      }
+    }
+  }
+
+  for (const c of currencyCols) {
+    for (let r = 1; r <= range.e.r; r++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (ws[cellRef] && ws[cellRef].v != null) {
+        ws[cellRef].z = "#,##0";
+      }
+    }
+  }
+
+  ws["!cols"] = autoFitColumns(data);
+}
+
+function downloadXLSX(filename: string, wb: XLSX.WorkBook) {
+  const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
-}
-
-function toCSVValue(v: string | number): string {
-  const s = String(v);
-  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
 }
 
 export function ReportsPage() {
@@ -159,40 +218,48 @@ export function ReportsPage() {
 
   const exportSalesCSV = useCallback(() => {
     if (!detailedSales) return;
-    const header = ["Date", "Payment Method", "Items", "Total (MK)", "Item Details"];
+    const headers = ["Date", "Payment Method", "Items", "Total (MK)", "Item Details"];
     const rows = detailedSales.sales.map((s) => {
       const itemDetails = s.items
         .map((i) => `${i.productName} x${i.qty} @ ${i.unitPrice.toLocaleString()}`)
         .join("; ");
       return [
-        new Date(s.date).toLocaleDateString(),
+        new Date(s.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
         s.paymentMethod,
         s.itemCount,
         s.total,
         itemDetails,
       ];
     });
-    const csv = [header.join(","), ...rows.map((r) => r.map(toCSVValue).join(",")).join("\n")].join("\n");
-    downloadCSV(`sales-report-${from}-to-${to}.csv`, csv);
+
+    const wb = XLSX.utils.book_new();
+    const ws: XLSX.WorkSheet = { "!ref": "" };
+    exportSheet(ws, [headers, ...rows], headers, [3], []);
+    XLSX.utils.book_append_sheet(wb, ws, "Sales Report");
+    downloadXLSX(`sales-report-${from}-to-${to}.xlsx`, wb);
   }, [detailedSales, from, to]);
 
   const exportExpensesCSV = useCallback(() => {
     if (!detailedExpenses) return;
-    const header = ["Date", "Category", "Amount (MK)", "Note", "Item Details"];
+    const headers = ["Date", "Category", "Amount (MK)", "Note", "Item Details"];
     const rows = detailedExpenses.expenses.map((e) => {
       const itemDetails = e.items
         .map((i) => `${i.description} x${i.qty} @ ${i.unitPrice.toLocaleString()}`)
         .join("; ");
       return [
-        new Date(e.date).toLocaleDateString(),
+        new Date(e.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
         e.category,
         e.amount,
         e.note ?? "",
         itemDetails,
       ];
     });
-    const csv = [header.join(","), ...rows.map((r) => r.map(toCSVValue).join(",")).join("\n")].join("\n");
-    downloadCSV(`expenses-report-${from}-to-${to}.csv`, csv);
+
+    const wb = XLSX.utils.book_new();
+    const ws: XLSX.WorkSheet = { "!ref": "" };
+    exportSheet(ws, [headers, ...rows], headers, [2], []);
+    XLSX.utils.book_append_sheet(wb, ws, "Expenses Report");
+    downloadXLSX(`expenses-report-${from}-to-${to}.xlsx`, wb);
   }, [detailedExpenses, from, to]);
 
   if (!b) {
@@ -552,7 +619,7 @@ function SalesDetailTab({
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
         >
           <Download className="h-4 w-4" />
-          Export CSV
+          Export Excel
         </button>
       </div>
 
@@ -672,7 +739,7 @@ function ExpensesDetailTab({
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
         >
           <Download className="h-4 w-4" />
-          Export CSV
+          Export Excel
         </button>
       </div>
 
