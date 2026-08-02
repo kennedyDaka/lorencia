@@ -94,7 +94,8 @@ function thirtyDaysAgo() {
 }
 
 function downloadCSV(filename: string, csv: string) {
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -158,28 +159,38 @@ export function ReportsPage() {
 
   const exportSalesCSV = useCallback(() => {
     if (!detailedSales) return;
-    const header = ["Date", "Customer", "Payment Method", "Items", "Total (MK)", "Note"];
-    const rows = detailedSales.sales.map((s) => [
-      new Date(s.date).toLocaleDateString(),
-      s.customer,
-      s.paymentMethod,
-      s.itemCount,
-      s.total,
-      s.note ?? "",
-    ]);
+    const header = ["Date", "Payment Method", "Items", "Total (MK)", "Item Details"];
+    const rows = detailedSales.sales.map((s) => {
+      const itemDetails = s.items
+        .map((i) => `${i.productName} x${i.qty} @ ${i.unitPrice.toLocaleString()}`)
+        .join("; ");
+      return [
+        new Date(s.date).toLocaleDateString(),
+        s.paymentMethod,
+        s.itemCount,
+        s.total,
+        itemDetails,
+      ];
+    });
     const csv = [header.join(","), ...rows.map((r) => r.map(toCSVValue).join(",")).join("\n")].join("\n");
     downloadCSV(`sales-report-${from}-to-${to}.csv`, csv);
   }, [detailedSales, from, to]);
 
   const exportExpensesCSV = useCallback(() => {
     if (!detailedExpenses) return;
-    const header = ["Date", "Category", "Amount (MK)", "Note"];
-    const rows = detailedExpenses.expenses.map((e) => [
-      new Date(e.date).toLocaleDateString(),
-      e.category,
-      e.amount,
-      e.note ?? "",
-    ]);
+    const header = ["Date", "Category", "Amount (MK)", "Note", "Item Details"];
+    const rows = detailedExpenses.expenses.map((e) => {
+      const itemDetails = e.items
+        .map((i) => `${i.description} x${i.qty} @ ${i.unitPrice.toLocaleString()}`)
+        .join("; ");
+      return [
+        new Date(e.date).toLocaleDateString(),
+        e.category,
+        e.amount,
+        e.note ?? "",
+        itemDetails,
+      ];
+    });
     const csv = [header.join(","), ...rows.map((r) => r.map(toCSVValue).join(",")).join("\n")].join("\n");
     downloadCSV(`expenses-report-${from}-to-${to}.csv`, csv);
   }, [detailedExpenses, from, to]);
