@@ -88,15 +88,13 @@ export function PosPage() {
 
   const addToCart = (product: Product) => {
     if (product.stockQty <= 0) {
-      toast.error(`${product.name} is out of stock`);
-      return;
+      toast.warning(`${product.name} is out of stock — sale will proceed`);
     }
     setCart((prev) => {
       const existing = prev[product.id];
       if (existing) {
-        if (existing.qty >= product.stockQty) {
-          toast.error(`Only ${product.stockQty} in stock`);
-          return prev;
+        if (existing.qty >= product.stockQty && product.stockQty > 0) {
+          toast.warning(`Only ${product.stockQty} in stock — selling more`);
         }
         return { ...prev, [product.id]: { ...existing, qty: existing.qty + 1 } };
       }
