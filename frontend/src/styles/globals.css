@@ -49,6 +49,7 @@
 
 html {
   font-family: var(--font-sans);
+  overflow-x: hidden;
 }
 
 h1, h2, h3, h4 {
@@ -62,6 +63,8 @@ body {
     radial-gradient(ellipse at top right, rgba(185, 62, 49, 0.18) 0%, transparent 50%),
     radial-gradient(ellipse at bottom left, rgba(153, 51, 153, 0.14) 0%, transparent 50%);
   min-height: 100vh;
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
 }
 
 .gradient-brand {
