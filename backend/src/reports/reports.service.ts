@@ -117,7 +117,7 @@ export class ReportsService {
         FROM "sale_items" si
         JOIN "sales" s ON si."sale_id" = s."id"
         LEFT JOIN "products" p ON si."product_id" = p."id"
-        WHERE s."business_id" = ${businessId}
+        WHERE s."business_id" = ${businessId}::uuid
           AND s."created_at" >= ${from}
           AND s."created_at" <= ${to}
         GROUP BY si."product_id", p."name"
