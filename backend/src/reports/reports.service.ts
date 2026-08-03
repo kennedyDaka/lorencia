@@ -114,12 +114,12 @@ export class ReportsService {
         SELECT si."productId", p."name" as "productName",
                SUM(si."qty" * si."unitPrice")::float as "revenue",
                SUM(si."qty")::float as "count"
-        FROM "SaleItem" si
-        JOIN "Sale" s ON si."saleId" = s."id"
-        LEFT JOIN "Product" p ON si."productId" = p."id"
-        WHERE s."businessId" = ${businessId}
-          AND s."createdAt" >= ${from}
-          AND s."createdAt" <= ${to}
+        FROM "sale_items" si
+        JOIN "sales" s ON si."sale_id" = s."id"
+        LEFT JOIN "products" p ON si."product_id" = p."id"
+        WHERE s."business_id" = ${businessId}
+          AND s."created_at" >= ${from}
+          AND s."created_at" <= ${to}
         GROUP BY si."productId", p."name"
         ORDER BY "revenue" DESC
         LIMIT 5

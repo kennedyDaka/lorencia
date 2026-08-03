@@ -44,6 +44,7 @@ export function AuthPage() {
     }
 
     toast.success("Signed in successfully");
+    setLoading(false);
   };
 
   return (
