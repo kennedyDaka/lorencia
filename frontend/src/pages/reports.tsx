@@ -114,22 +114,12 @@ function exportSheet(
   currencyCols: number[],
   dateCols: number[],
 ) {
-  const [headerRow, ...bodyRows] = data;
-
-  XLSX.utils.sheet_add_aoa(ws, [headers], { origin: "A1" });
-
-  for (let r = 0; r < bodyRows.length; r++) {
-    for (let c = 0; c < bodyRows[r].length; c++) {
-      const cellRef = XLSX.utils.encode_cell({ r: r + 1, c });
-      ws[cellRef] = { v: bodyRows[r][c], t: "s" };
-    }
-  }
+  XLSX.utils.sheet_add_aoa(ws, data, { origin: "A1" });
 
   const range = XLSX.utils.decode_range(ws["!ref"]!);
 
-  for (let c = 0; c < headerRow.length; c++) {
-    const colLetter = XLSX.utils.encode_col(c);
-    const cellRef = `${colLetter}1`;
+  for (let c = 0; c < headers.length; c++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 0, c });
     if (ws[cellRef]) {
       ws[cellRef].s = {
         font: { bold: true, color: { rgb: "FFFFFF" } },
