@@ -111,8 +111,8 @@ export class ReportsService {
         _count: true,
       }),
       this.prisma.$queryRaw`
-        SELECT si."productId", p."name" as "productName",
-               SUM(si."qty" * si."unitPrice")::float as "revenue",
+        SELECT si."product_id" as "productId", p."name" as "productName",
+               SUM(si."qty" * si."unit_price")::float as "revenue",
                SUM(si."qty")::float as "count"
         FROM "sale_items" si
         JOIN "sales" s ON si."sale_id" = s."id"
@@ -120,7 +120,7 @@ export class ReportsService {
         WHERE s."business_id" = ${businessId}
           AND s."created_at" >= ${from}
           AND s."created_at" <= ${to}
-        GROUP BY si."productId", p."name"
+        GROUP BY si."product_id", p."name"
         ORDER BY "revenue" DESC
         LIMIT 5
       `,
