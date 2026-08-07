@@ -2,6 +2,16 @@ import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { ReportsService } from "./reports.service";
 
+function parseDate(s: string | undefined, fallback: Date): Date {
+  if (!s) return fallback;
+  const d = new Date(s);
+  if (isNaN(d.getTime())) return fallback;
+  if (!s.includes("T")) {
+    d.setUTCHours(0, 0, 0, 0);
+  }
+  return d;
+}
+
 @Controller("reports")
 @UseGuards(JwtAuthGuard)
 export class ReportsController {
@@ -18,8 +28,8 @@ export class ReportsController {
     @Query("from") from?: string,
     @Query("to") to?: string,
   ) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), 0, 1);
-    const toDate = to ? new Date(to) : new Date();
+    const fromDate = parseDate(from, new Date(new Date().getFullYear(), 0, 1));
+    const toDate = parseDate(to, new Date());
     return this.reportsService.getProfitAndLoss(businessId, fromDate, toDate);
   }
 
@@ -29,8 +39,8 @@ export class ReportsController {
     @Query("from") from?: string,
     @Query("to") to?: string,
   ) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), 0, 1);
-    const toDate = to ? new Date(to) : new Date();
+    const fromDate = parseDate(from, new Date(new Date().getFullYear(), 0, 1));
+    const toDate = parseDate(to, new Date());
     return this.reportsService.getSalesReport(businessId, fromDate, toDate);
   }
 
@@ -40,8 +50,8 @@ export class ReportsController {
     @Query("from") from?: string,
     @Query("to") to?: string,
   ) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), 0, 1);
-    const toDate = to ? new Date(to) : new Date();
+    const fromDate = parseDate(from, new Date(new Date().getFullYear(), 0, 1));
+    const toDate = parseDate(to, new Date());
     return this.reportsService.getExpenseReport(businessId, fromDate, toDate);
   }
 
@@ -51,8 +61,8 @@ export class ReportsController {
     @Query("from") from?: string,
     @Query("to") to?: string,
   ) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), 0, 1);
-    const toDate = to ? new Date(to) : new Date();
+    const fromDate = parseDate(from, new Date(new Date().getFullYear(), 0, 1));
+    const toDate = parseDate(to, new Date());
     return this.reportsService.getDetailedSales(businessId, fromDate, toDate);
   }
 
@@ -62,8 +72,8 @@ export class ReportsController {
     @Query("from") from?: string,
     @Query("to") to?: string,
   ) {
-    const fromDate = from ? new Date(from) : new Date(new Date().getFullYear(), 0, 1);
-    const toDate = to ? new Date(to) : new Date();
+    const fromDate = parseDate(from, new Date(new Date().getFullYear(), 0, 1));
+    const toDate = parseDate(to, new Date());
     return this.reportsService.getDetailedExpenses(businessId, fromDate, toDate);
   }
 }
