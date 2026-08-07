@@ -226,3 +226,136 @@ export function buildReceiptHTML(sale: {
 </body>
 </html>`;
 }
+
+interface WeeklySaleRow {
+  id: string;
+  date: string;
+  customer: string;
+  paymentMethod: string;
+  total: number;
+  itemCount: number;
+  items: Array<{ productName: string; qty: number; unitPrice: number; lineTotal: number }>;
+}
+
+export function buildWeeklySalesReportHTML(
+  cafeSales: { sales: WeeklySaleRow[]; totalRevenue: number; totalSales: number; totalItems: number },
+  giftShopSales: { sales: WeeklySaleRow[]; totalRevenue: number; totalSales: number; totalItems: number },
+  fromDate: string,
+  toDate: string,
+): string {
+  const fmt = (n: number) => new Intl.NumberFormat("en-MW", { style: "currency", currency: "MWK", minimumFractionDigits: 0 }).format(n);
+  const fmtDate = (s: string) => new Date(s).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
+  function renderTable(sales: WeeklySaleRow[]): string {
+    if (sales.length === 0) {
+      return '<p style="text-align:center;color:#8b7b6f;padding:20px;">No sales for this period.</p>';
+    }
+    const rows = sales.map((s) => {
+      const itemLines = s.items.map((i) => `${i.productName} x${i.qty}`).join(", ");
+      return `<tr>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0ebe5;font-size:13px;color:#3d2b1f;">${fmtDate(s.date)}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0ebe5;font-size:13px;color:#6b5b4f;">${s.customer}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0ebe5;font-size:13px;color:#6b5b4f;text-transform:capitalize;">${s.paymentMethod}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0ebe5;font-size:12px;color:#8b7b6f;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${itemLines}">${itemLines}</td>
+        <td style="padding:8px 12px;border-bottom:1px solid #f0ebe5;font-size:13px;color:#3d2b1f;text-align:right;font-weight:600;">${fmt(s.total)}</td>
+      </tr>`;
+    }).join("");
+    return `<table style="width:100%;border-collapse:collapse;">
+      <thead><tr>
+        <th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8b7b6f;border-bottom:2px solid #e8e0d8;font-weight:600;">Date</th>
+        <th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8b7b6f;border-bottom:2px solid #e8e0d8;font-weight:600;">Customer</th>
+        <th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8b7b6f;border-bottom:2px solid #e8e0d8;font-weight:600;">Payment</th>
+        <th style="padding:8px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8b7b6f;border-bottom:2px solid #e8e0d8;font-weight:600;">Items</th>
+        <th style="padding:8px 12px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#8b7b6f;border-bottom:2px solid #e8e0d8;font-weight:600;">Total</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  function renderSection(title: string, icon: string, data: { sales: WeeklySaleRow[]; totalRevenue: number; totalSales: number; totalItems: number }): string {
+    return `
+    <div style="margin-bottom:32px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-size:20px;">${icon}</span>
+        <h2 style="font-size:18px;font-weight:700;color:#3d2b1f;margin:0;">${title}</h2>
+      </div>
+      <div style="display:flex;gap:16px;margin-bottom:16px;">
+        <div style="background:#f8f4ef;border-radius:8px;padding:12px 16px;flex:1;">
+          <div style="font-size:11px;color:#8b7b6f;text-transform:uppercase;letter-spacing:1px;">Total Sales</div>
+          <div style="font-size:20px;font-weight:700;color:#3d2b1f;">${data.totalSales}</div>
+        </div>
+        <div style="background:#f8f4ef;border-radius:8px;padding:12px 16px;flex:1;">
+          <div style="font-size:11px;color:#8b7b6f;text-transform:uppercase;letter-spacing:1px;">Items Sold</div>
+          <div style="font-size:20px;font-weight:700;color:#3d2b1f;">${data.totalItems}</div>
+        </div>
+        <div style="background:#f0f7f2;border-radius:8px;padding:12px 16px;flex:1;">
+          <div style="font-size:11px;color:#8b7b6f;text-transform:uppercase;letter-spacing:1px;">Revenue</div>
+          <div style="font-size:20px;font-weight:700;color:#2d7a3a;">${fmt(data.totalRevenue)}</div>
+        </div>
+      </div>
+      ${renderTable(data.sales)}
+    </div>`;
+  }
+
+  const combinedRevenue = cafeSales.totalRevenue + giftShopSales.totalRevenue;
+  const combinedSales = cafeSales.totalSales + giftShopSales.totalSales;
+  const combinedItems = cafeSales.totalItems + giftShopSales.totalItems;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Weekly Sales Report - Lorencia</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: #faf7f2; padding: 32px; color: #3d2b1f; }
+    @media print {
+      body { padding: 0; background: #fff; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <button onclick="window.print()" class="no-print" style="position:fixed;top:16px;right:16px;background:#c7493a;color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+    Print Report
+  </button>
+
+  <div style="max-width:900px;margin:0 auto;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <h1 style="font-size:28px;font-weight:700;color:#c7493a;letter-spacing:0.5px;">Lorencia</h1>
+      <p style="font-size:12px;color:#8b7b6f;text-transform:uppercase;letter-spacing:2px;margin-top:4px;">Cafe &amp; Gift Shop</p>
+      <div style="margin-top:16px;padding:12px;background:#f8f4ef;border-radius:8px;display:inline-block;">
+        <span style="font-size:14px;font-weight:600;color:#3d2b1f;">Weekly Sales Report</span>
+        <span style="font-size:13px;color:#6b5b4f;margin-left:8px;">${fmtDate(fromDate)} &ndash; ${fmtDate(toDate)}</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:16px;margin-bottom:24px;">
+      <div style="flex:1;background:#fff;border:1px solid #e8e0d8;border-radius:12px;padding:16px;text-align:center;">
+        <div style="font-size:11px;color:#8b7b6f;text-transform:uppercase;letter-spacing:1px;">Combined Revenue</div>
+        <div style="font-size:24px;font-weight:700;color:#2d7a3a;">${fmt(combinedRevenue)}</div>
+      </div>
+      <div style="flex:1;background:#fff;border:1px solid #e8e0d8;border-radius:12px;padding:16px;text-align:center;">
+        <div style="font-size:11px;color:#8b7b6f;text-transform:uppercase;letter-spacing:1px;">Total Sales</div>
+        <div style="font-size:24px;font-weight:700;color:#3d2b1f;">${combinedSales}</div>
+      </div>
+      <div style="flex:1;background:#fff;border:1px solid #e8e0d8;border-radius:12px;padding:16px;text-align:center;">
+        <div style="font-size:11px;color:#8b7b6f;text-transform:uppercase;letter-spacing:1px;">Total Items</div>
+        <div style="font-size:24px;font-weight:700;color:#3d2b1f;">${combinedItems}</div>
+      </div>
+    </div>
+
+    <div style="background:#fff;border:1px solid #e8e0d8;border-radius:12px;padding:24px;">
+      ${renderSection("Lorencia Cafe", "\u2615", cafeSales)}
+      <hr style="border:none;border-top:2px solid #f0ebe5;margin:24px 0;" />
+      ${renderSection("Lorencia Gift Shop", "\uD83C\uDF81", giftShopSales)}
+    </div>
+
+    <div style="text-align:center;margin-top:24px;font-size:11px;color:#b8a898;">
+      Generated on ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+    </div>
+  </div>
+</body>
+</html>`;
+}

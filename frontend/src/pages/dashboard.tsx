@@ -1,10 +1,11 @@
+import { useState, Fragment } from "react";
 import { Link } from "@tanstack/react-router";
 import { useAuthStore } from "@/store/auth";
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/services/api";
 import { BUSINESSES } from "@/lib/businesses";
-import { formatMK } from "@/lib/utils";
+import { formatMK, buildWeeklySalesReportHTML } from "@/lib/utils";
 import {
   Coffee,
   Gift,
@@ -22,6 +23,8 @@ import {
   BookOpen,
   Wallet,
   Loader2,
+  Printer,
+  Calendar,
 } from "lucide-react";
 import {
   BarChart,
@@ -48,6 +51,22 @@ interface PnLData {
   expenses: { category: string; total: number }[];
   totalExpenses: number;
   netProfit: number;
+}
+
+interface DetailedSales {
+  sales: Array<{
+    id: string;
+    date: string;
+    customer: string;
+    paymentMethod: string;
+    total: number;
+    itemCount: number;
+    items: Array<{ productName: string; qty: number; unitPrice: number; lineTotal: number }>;
+    note?: string;
+  }>;
+  totalRevenue: number;
+  totalSales: number;
+  totalItems: number;
 }
 
 export function DashboardPage() {
@@ -77,6 +96,21 @@ export function DashboardPage() {
   const { data: giftPnl } = useQuery<PnLData>({
     queryKey: ["pnl", "gift-shop"],
     queryFn: () => apiGet(`/reports/pnl/business/${giftShopId}?from=${startOfYear}&to=${now}`),
+  });
+
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekFrom = weekAgo.toISOString().slice(0, 10);
+  const weekTo = new Date().toISOString().slice(0, 10);
+
+  const { data: cafeWeeklySales, isLoading: cafeWeeklyLoading } = useQuery<DetailedSales>({
+    queryKey: ["dashboard-weekly-sales", "cafe", weekFrom, weekTo],
+    queryFn: () => apiGet(`/reports/sales-detail/business/${cafeId}?from=${weekFrom}T00:00:00.000Z&to=${weekTo}T23:59:59.999Z`),
+  });
+
+  const { data: giftWeeklySales, isLoading: giftWeeklyLoading } = useQuery<DetailedSales>({
+    queryKey: ["dashboard-weekly-sales", "gift-shop", weekFrom, weekTo],
+    queryFn: () => apiGet(`/reports/sales-detail/business/${giftShopId}?from=${weekFrom}T00:00:00.000Z&to=${weekTo}T23:59:59.999Z`),
   });
 
   const loading = authLoading || cafeLoading || giftLoading;
@@ -111,6 +145,20 @@ export function DashboardPage() {
     .sort((a, b) => b.value - a.value);
 
   const COLORS = ["#c7493a", "#503828", "#d4a27c", "#8b6f47", "#c4956a", "#a67c52"];
+
+  const printWeeklyReport = () => {
+    const html = buildWeeklySalesReportHTML(
+      cafeWeeklySales ?? { sales: [], totalRevenue: 0, totalSales: 0, totalItems: 0 },
+      giftWeeklySales ?? { sales: [], totalRevenue: 0, totalSales: 0, totalItems: 0 },
+      weekFrom,
+      weekTo,
+    );
+    const w = window.open("", "_blank");
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+    }
+  };
 
   if (loading) {
     return (
@@ -224,6 +272,41 @@ export function DashboardPage() {
           <BusinessCard slug="cafe" name="Lorencia Cafe" data={cafeDash} icon={<Coffee className="h-8 w-8 text-primary" />} subtitle="POS + Catering + Raw Materials" />
           <BusinessCard slug="gift-shop" name="Lorencia Gift Shop" data={giftDash} icon={<Gift className="h-8 w-8 text-primary" />} subtitle="POS Terminal" />
         </div>
+
+        {/* Weekly Sales Section */}
+        <div className="rounded-xl border border-border bg-card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-bold">Weekly Sales Details</h2>
+              <span className="text-sm text-muted-foreground ml-2">
+                {new Date(weekFrom).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} – {new Date(weekTo).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+            </div>
+            <button
+              onClick={printWeeklyReport}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              <Printer className="h-4 w-4" />
+              Print Report
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <WeeklySalesTable
+              title="Lorencia Cafe"
+              icon={<Coffee className="h-5 w-5 text-primary" />}
+              data={cafeWeeklySales}
+              loading={cafeWeeklyLoading}
+            />
+            <WeeklySalesTable
+              title="Lorencia Gift Shop"
+              icon={<Gift className="h-5 w-5 text-primary" />}
+              data={giftWeeklySales}
+              loading={giftWeeklyLoading}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -284,5 +367,96 @@ function BusinessCard({
         </div>
       </div>
     </Link>
+  );
+}
+
+function WeeklySalesTable({
+  title,
+  icon,
+  data,
+  loading,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  data?: DetailedSales;
+  loading: boolean;
+}) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  return (
+    <div className="rounded-xl border border-border bg-background overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border">
+        <div className="flex items-center gap-2">
+          {icon}
+          <h3 className="text-sm font-bold">{title}</h3>
+        </div>
+        <div className="text-sm font-bold text-green-600">{formatMK(data?.totalRevenue ?? 0)}</div>
+      </div>
+
+      {loading ? (
+        <div className="p-8 text-center text-sm text-muted-foreground">Loading...</div>
+      ) : !data || data.sales.length === 0 ? (
+        <div className="p-8 text-center text-sm text-muted-foreground">No sales this week.</div>
+      ) : (
+        <div className="overflow-x-auto max-h-80 overflow-y-auto">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-card">
+              <tr className="border-b border-border">
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Date</th>
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Customer</th>
+                <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Payment</th>
+                <th className="text-center px-3 py-2 font-medium text-muted-foreground text-xs">Items</th>
+                <th className="text-right px-3 py-2 font-medium text-muted-foreground text-xs">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.sales.map((sale) => (
+                <Fragment key={sale.id}>
+                  <tr
+                    className="border-b border-border last:border-0 hover:bg-muted/30 cursor-pointer"
+                    onClick={() => setExpandedId(expandedId === sale.id ? null : sale.id)}
+                  >
+                    <td className="px-3 py-2 text-xs">
+                      {new Date(sale.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">{sale.customer}</td>
+                    <td className="px-3 py-2">
+                      <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium capitalize">
+                        {sale.paymentMethod}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-center text-xs">{sale.itemCount}</td>
+                    <td className="px-3 py-2 text-right text-xs font-medium">{formatMK(sale.total)}</td>
+                  </tr>
+                  {expandedId === sale.id && (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-2 bg-muted/20">
+                        <div className="space-y-1">
+                          {sale.items.map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-[11px]">
+                              <span className="text-muted-foreground">
+                                {item.productName} x{item.qty}
+                              </span>
+                              <span>{formatMK(item.lineTotal)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {!loading && data && data.sales.length > 0 && (
+        <div className="flex justify-between px-4 py-2 bg-card border-t border-border text-xs">
+          <span className="text-muted-foreground">{data.totalSales} sales</span>
+          <span className="text-muted-foreground">{data.totalItems} items</span>
+        </div>
+      )}
+    </div>
   );
 }
